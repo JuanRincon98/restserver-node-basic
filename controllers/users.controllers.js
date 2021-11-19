@@ -3,15 +3,22 @@ const bcryptjs = require('bcryptjs');
 
 const Usuario = require('../models/usuario');
 
-const usersGet = (req = request, res = response) => {
+const usersGet = async (req = request, res = response) => {
 
-    const { q, nombre = 'No name', apikey } = req.query;
+    const { limite = 5, desde = 0 } = req.query;
+    const query = { estado: true };
+
+    //Hacer dos consultas al mismo tiempo
+    const [ total, usuarios] = await Promise.all([
+        Usuario.countDocuments(query),
+        Usuario.find(query)
+            .limit(Number(limite))
+            .skip(Number(desde)),
+    ]);
 
     res.json({
-        msg: 'get API - Controlador',
-        q,
-        nombre,
-        apikey
+        total, 
+        usuarios
     })
 }
 
@@ -32,13 +39,21 @@ const usersPost = async (req = request, res = response) => {
     })
 };
 
-const usersPut = (req, res) => {
+const usersPut = async (req, res) => {
 
     const { id } = req.params;
+    const { _id, password, google, ...resto } = req.body;
+
+    if (password) {
+        //Encriptar contraseña
+        const salt = bcryptjs.genSaltSync();
+        resto.password = bcryptjs.hashSync(password, salt);
+    }
+
+    const usuario = await Usuario.findByIdAndUpdate(id, resto);
 
     res.json({
-        msg: 'put API - Controlador',
-        id
+        usuario
     })
 };
 

@@ -8,14 +8,19 @@ const { usersGet,
     usersPost,
     usersDelete } = require('../controllers/users.controllers');
 
-const { esRoleValido, correoExiste } = require('../helpers/db-validators');
+const { esRoleValido, correoExiste, usuarioExistePorId } = require('../helpers/db-validators');
 
 const router = Router();
 
 //RUTAS
 router.get('/', usersGet);
 
-router.put('/:id', usersPut);
+router.put('/:id', [
+    check('id', 'No es un id válido').isMongoId(),
+    check('id').custom(usuarioExistePorId),
+    check('rol').custom(esRoleValido),
+    validarCampos,
+], usersPut);
 
 router.post('/', [
     check('nombre', 'El nombre es obligatorio').not().isEmpty(),
